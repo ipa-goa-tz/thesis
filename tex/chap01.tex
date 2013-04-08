@@ -1,0 +1,58 @@
+\chapter{State of the art}
+\label{chap:relwork}
+\section{Face Detection}
+\label{chap:relwork:sec:detection}
+As this paper describes a complete face recognition system, the literature review covers the detection and the recognition of faces.
+Face detection is the search for face regions in color images or 3d data.
+The most famous face detection algorithm is the Viola-Jones detector \cite{Viola01} which constructs a rejection cascade built on Haar features.
+It has been the top performing face detection method for a long time and has not been beaten until Jain and Learned-Miller \cite{jain2011} introduced an online improvement procedure for the Viola-Jones classifier.
+Even better face detection results have been reported on the FDDB database \cite{jain2010} by Li et al. \cite{li2011} who construct a similarly boosted cascade on SURF features retaining a comparable computational effort.
+Face recognition on 3d data has also become increasingly important.
+The work of Jasek et al. \cite{Jasek2012} is one example that uses local curvature features for face detection.
+Further relevant literature can be found in their publication.
+Fischer et al. \cite{Fischer2010} introduced a combined system that applies the Viola-Jones classifier to depth images for head detection and to color images for face detection obtaining very good results.
+Because of this and fast computation time %, that could be confirmed in our experiments,
+we decided to employ this combined detector in the current work.
+
+\section{Face Recognition}
+\label{chap:relwork:sec:recognition}
+Regarding face recognition, there are many well-performing algorithms available today which target at significantly different applications, invariance properties, and computational demands.
+Some of the most influential approaches are projection methods \cite{Turk1991,Belhumeur1997,Naseem2010,Yan07,Yang2002,Zhang2010}, local pattern-based methods \cite{Ahonen2006, Tan2010}, generative models \cite{Georghiades01, Lee05}, sparse representations \cite{Wagner2012}, and face modeling via Hidden Markov Models \cite{Samaria1994}.
+
+\subsection{Projection methods}
+\label{chap:relwork:sec:recognition:subsec:projection}
+Projection methods generally consider the pixel image as a vector in a high-dimensional space and project it into some low-dimensional space, often called face space, which is better suited for classification.
+Many different projections have been proposed including famous examples like Eigenfaces \cite{Turk1991}, where the basis of the face space is spanned by eigenvectors obtained from a PCA analysis of the training images, and Fisherfaces \cite{Belhumeur1997}, where the projection bases on Fisher's Linear Discriminant and is computed to be nearly orthogonal to intra-class scatter to minimize intra-class variance while maximizing inter-class variance.
+Further projection methods construct linear subspaces for each person based on the original gallery images and measure the distance of query faces to these spaces \cite{Naseem2010}, enhance the projection by kernel methods to model higher-order pixel dependencies \cite{Yang2002}, or refine the Fisherfaces approach with more intricate target subspaces \cite{Yan07, Zhang2010}.
+All projection methods are characterized by a low computational complexity and all modern variants and Fisherfaces attain high recognition rates on standard databases.
+
+\subsection{Sparse representation}
+\label{chap:relwork:sec:recognition:subsec:sparse}
+Similar to the approach of Naseem et al. \cite{Naseem2010} the sparse representation of Wagner et al. \cite{Wagner2012} encodes faces as linear combination of a set of gallery images, however, with the difference that the vector of coefficients and the vector of pixel corrections are optimized with an $L_1$ norm simultaneously to achieve a sparse representation.
+The authors implement a preceding alignment optimization since the method relies heavily on well-aligned images.
+Although providing very good recognition results this approach is not well-suited for robotics applications because of a computation time of several seconds induced by the two optimizations and the need for diverse training images.
+Local pattern-based methods construct spatially constrained statistics over dense local image features and accumulate these statistics to a vector describing a face.
+Ahonen et al. \cite{Ahonen2006} compute histograms over local binary patterns (LBP) in several image regions and attach the histograms to a feature vector that is matched with a $\chi^2$ measure against the gallery.
+Tan and Triggs \cite{Tan2010} expand this idea to local ternary patterns and reduce the length of the high-dimensional feature vectors with General Tensor Discriminant Analysis.
+Local pattern-based algorithms are counted to the top-performing face recognition methods and are usually fast to compute.
+
+\subsection{Generative methods}
+\label{chap:relwork:sec:recognition:subsec:generative}
+In contrast to the discriminative approaches discussed so far, generative methods base upon the illumination cone model \cite{Basri2003} which proves that many kinds of illumination may be described by a 9-dimensional subspace.
+Georghiades et al. \cite{Georghiades01} estimate the true 3d shape of a face from a set of frontal face images with variable lighting and render new poses synthetically to improve recognition performance w.r.t. head pose by computing further illumination cones for all possible alignments.
+In a similar approach Lee et al. \cite{Lee05} model the appearance of arbitrarily illuminated faces by a set of 5-9 images taken with specified locations of a point light source. 
+Although such generative methods do also achieve good recognition results they are not well-suited for practical usage due to the necessity for defined or various illumination conditions for training data recording.
+Consequently, only projection-based and local pattern-based methods are adequate for application in robotics and hence tested within our recognition framework.
+Both approaches suffer from influences like variable lighting and head pose. 
+
+\section{Preprocessing}
+\subsection{Illumination correction}
+Chen et al. \cite{chen06} divide illumination correction methods into three categories: (i) modeling of the illumination cone as discussed above, (ii) extraction of invariant features, and (iii) preprocessing.
+Illumination invariant features are considered edge maps, derivatives of the gray-level image, images filtered with 2D Gabor-like functions \cite{Adini1997}, and to some extent LBPs \cite{Ahonen2006}.
+Preprocessing includes histogram equalization, logarithmic transform \cite{liu02}, gamma correction \cite{Goel11}, discarding the low-frequency Discrete Cosine Transform coefficients \cite{chen06}, Difference of Gaussians filtering, and contrast equalization \cite{Tan2010}.
+We implemented several preprocessing methods since they can be combined with many recognition algorithms and they are computed cheaply.
+
+\subsection{Head pose correction}
+Similarly, there are many solutions to head alignment like modeling multiple orientations with the training data \cite{Georghiades01, pentland1994} or face plane estimation from local features like eyes and nose that are found in the depth image \cite{Gurbuz12, Jasek2012} or in the color image \cite{beymer1994}.
+None of the discussed methods actively strives to model different facial expressions but local methods and Fisherfaces actively construct representations for filtering out such kinds of intra-class variance.
+

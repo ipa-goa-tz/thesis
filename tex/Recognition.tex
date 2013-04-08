@@ -1,0 +1,163 @@
+\newpage
+\section{Recognition}
+
+
+ General definition of face recognition as classification task.
+
+ Different kind of approaches.
+
+Appearance based approaches used in this work.
+
+Definition of image space.
+Definition of feature space.
+
+Calculations in \textit{image space} are computationally expensive and  therefore
+one applies dimensionality reduction to a \textit{feature space}.
+
+Requirements for feature space:
+\begin{itemize}
+\item Reduced dimensionality for lower computation cost
+\item Optimized for classification task - no smearing but clustering of samples of indicidual classes
+\end{itemize}
+
+In this work two approaches are used: Eigenfaces, Fisherfaces.
+Both consist of a two phase structure:
+
+Training phase for construction of feature space.
+
+Recognition phase for classification of samples.
+
+
+\subsection{Training phase}
+Set of training images ${ x_j }$, which consists of $N$ images is used to train a model.
+The set is divided in classes, which in case of face recognition and classification are
+ different people. The number of classes in the training set is denoted as $c$.
+
+\subsection{Recognition phase}
+Previosly trained model is used to project the recognition sample to the feature space.
+Classification methods used to find class, sample belongs to.
+
+
+\section{Principal Component Analysis (PCA)}
+Principal component analysis is common method in computer vision for dimensionality reduction.
+Linear transformation from image space to feature space.
+
+Dimension reduction based on total Scatter of training set.
+Dimensions: From n(image size) to m.
+
+
+Computation of mean image $m$.
+\begin{equation}
+m=\frac{1}{N}\sum\limits_{j=0}^{N-1}{x_j}
+\end{equation}
+
+Computation of total scatter matrix.
+Explanation of scatter matrix/correlation matrix.
+
+\begin{equation}
+S_T=\frac{1}{N}\sum\limits_{j=0}^{N-1}(x_j-m)(x_j-m)^T
+\end{equation}
+
+Calculation of the linear projection.Aim is to maximize the determinant
+ of the total scatter matrix.
+\begin{equation}
+W_{PCA}=\arg \max |W^T S_T W |
+\end{equation}
+Eigenvalue decomposition results in the projection matrix $W_{PCA}$.
+
+Projection matrix consists of Eigenvectors corresponing to the $m$
+largest eigenvalues from the decomposition.
+
+
+\section{Linear Discriminant Analysis (LDA)}
+Dimensionality reduction based on linear projection.
+Between-class scatter is maximized opposed to within-class scatter.
+Dimensions: From n(image size) to m (number of classes -1).
+
+
+The within-class scatter matrix $S_W$ and the between-class scatter matrix $S_B$ are calculated:
+\begin{equation}
+  S_W=\frac{1}{N_i}\sum\limits_{i=0}^{c}(m_i-m)(m_i-m)^T
+\end{equation}
+
+\begin{equation}
+  S_B=\sum\limits_{i=0}^{c}\sum\limits_{j \in X_i}(x_j-m_i)(x_j-m_i)^T
+\end{equation}
+
+Where $N_i$ are are the number of images per individual class, $m_i$ denotes the mean image of
+each class.
+
+
+\begin{equation}
+  W_{LDA}=\arg \max \frac{|W^T S_B W |}{|W^T S_W W|}
+\end{equation}
+Solved by generalized eigenvalue problem. $W_{LDA}$ consists of Eigenvectors, corresponding
+to the m biggest Eigenvalues.
+Attention, when  $S_W$ is singular.(As is the case without PCA).
+
+\section{Eigenfaces}
+A linear transformation is computed, that maps the $n$-dimensional \textit{image space} to
+the $m$-dimensional \textit{Eigenspace}.
+So the image is transformed to a feature vector $y_k  \in \mathbb{R}^m$.
+
+\begin{align}
+  W_{opt}& =W_{PCA}\\
+  y_k    & =W_{opt}^T x_k \\
+\end{align}
+
+\subsection{procedure}
+Perform dimension reduction with PCA of training set.
+
+Result is projection matrix $W_{PCA}$.
+
+Probe images are projected to subspace by applying $W_{PCA}$.
+
+Performance depends on dimension of subspace - number of eigenvectors.
+
+Nearest neighbour based classification of sample is performed in subspace(Eigenspace).
+
+\subsection{drawbacks - improvements}
+Eigenfaces are sensitive to illumination changes.
+
+Performance of approach dependent on dimension of feature space.
+
+Only total scatter is considered , the information of classes in the training set is
+neglected. Within-class scatter is treated in the same way as between-class scatter.
+Method not optimized for clustering/classification in feauture space - one needs
+method, that is optimized for classification.
+
+
+Solution:
+
+Proposal of eliminating first three principal comonents - mainly influenced from lighting.
+But one also loses discriminative information in the components.
+
+Use of additional optimization of feature space with respect to different classes.
+
+\section{Fisherfaces}
+ Class-specific method, that takes advantage of the labeled training set.
+
+Within-class scatter is distinguished from between-class scatter. 
+
+Problem within-class scatter matrix is most likely singular.
+
+LDA criterion is extended to match the application in face rcognition.
+
+
+\begin{align}
+  W_{opt}& = W^T_{LDA}W_{PCA}\\
+  W_{PCA}& =\arg \max |W^T S_T W |\\
+  W_{LDA}& =\arg \max \frac{|W^T W^T_{PCA} S_B W_{PCA}W |}{|W^T W^T_{PCA} S_W W_{PCA} W|}
+\end{align}
+
+PCA throws away only the smallest principal components, which contain the less discriminative information
+compared to the largest principal components.
+
+\subsection{procedure}
+Dimension reduction is first performed by PCA ( from $n$) to $N-c$.
+
+Training set is projected to PCA subspace by applying $W_{PCA}$.
+
+LDA is then applied, in order to achieve a subspace, that enables classification.
+
+The dimension of the final subspace is $c-1$.

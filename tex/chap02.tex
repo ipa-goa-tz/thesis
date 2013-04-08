@@ -1,0 +1,307 @@
+\chapter{Methods}
+\label{chap:methods}
+The person recognition system provides algorithms for all necessary steps to detect and identify people in RGB-D data streams.
+A sketch of the involved processing stages is displayed in Fig. \ref{fig:scheme}.
+We first detect the location of faces in the current view using a depth image-based head detector and a color image-based face detector (Sec. \ref{sec:methods:subsec:detection}).
+The detected faces are then analyzed by the face identification module which determines the names of captured persons while taking care of real world influences such as different lighting or varying face orientation (Sec. \ref{sec:methods:subsec:identification} to \ref{ssec:IdentificationUnknown}).
+Finally, Sec. \ref{sec:methods:subsec:tracking} discusses the detection tracker, which ensures that persons detected in previous images can be matched to the current results while filtering out spurious false identifications.
+
+\begin{figure}[tb]
+	\begin{center}
+		\includegraphics[width=0.99\columnwidth, trim = 4mm 280mm 40mm 4mm]{scheme2.pdf}
+	\end{center}
+	\caption{Computation scheme for the modules of the person recognition system with major algorithms outlined.}
+	\label{fig:scheme}
+\end{figure}
+
+\section{RGB-D Face Detection}
+\label{chap:methods:sec:detection}
+%Algorithms for face recognition usually operate on image patches of face regions. Hence, the first step of the person recognition system is the detection of face regions in the image. 
+To exploit the depth modality of the RGB-D sensor and to increase the detection performance, a head detection step in the depth image predates the actual detection of faces in the color image.
+Both detection tasks are accomplished with the Viola-Jones detector \cite{Viola01}. %that scans the image with a sliding window and classifies image regions into face or no face based on boosted Haar features.
+A well-trained classifier for color images comes already with the OpenCV library \cite{bradski2008} whereas the head classifier for depth images has been trained with own data from a Microsoft Kinect. 
+For further details on the two-staged approach for face detection the reader is referred to our previous work \cite{Fischer2010}.
+Additionally, we implemented further feasibility checks for the detected face regions. 
+Face regions are only accepted up to a maximum distance $d_{max}$ to the camera which is mainly dependent on the resolution of the color camera and the corresponding expected accuracy at the face identification task.
+Moreover, faces are only accepted if their 3d extent, i.e. the diameter of the head, lies within a realistic range $[h_{min}, h_{max}]$.
+
+\section{RGB-D Face Identification}
+\label{chap:methods:sec:identification}
+The face identification approach assembles a variety of methods in three major steps to achieve robust recognition. \\
+%The approach can be divided into three areas, where work has been done in order to achieve an overall improvement of the recognition framework.
+\emph{Preprocessing:}
+To mitigate the influences of uncontrolled real environments the images are preprocessed with respect to illumination and head alignment. 
+%To overcome the issues of imagery, that is recorded in uncontrolled environments, the imagery is preprocessed regarding head pose and illumination of the scene.
+This way more homogeneous input data for the actual recognition is produced. \\
+	\emph{Recognition:} 
+The normalized images are fed into a projection-based recognition system based on Fisherfaces. \\
+%This recognition system involves an implementation of the Fisherfaces algorithm.
+	\emph{Classification:}
+Test images are projected to the subspace, that is computed during the training phase.
+Traditionally the resulting feature vector is then compared to the projected training data and classification is done by choosing the nearest neighbor.
+This framework also provides the possibility to classify the feature vector with machine learning methods such as Support Vector Machines or K-Nearest Neighbors.
+%In order to be able to distinguish between people, that are already contained in the training data base and people new to it, a dynamically calculated threshold is used.
+
+\subsection{Illumination Correction}
+\label{chap:methods:subsec:illumination}
+To compensate for illumination variation in uncontrolled lighting situations, a normalization to a standard form is performed.
+We try to achieve uniform lighting conditions while retaining the facial features \cite{chen06}.
+\subsubsection{Histogram Equalization}
+The first processing step is a histogram equalization, which leads to a uniform distribution of
+gray values throughout the image.
+This becomes visible, as local contrast is increased \cite{Goel11}.
+\todo{}
+%- what is a histogram , what does it represent
+%- why change the histogram
+%- how change the histogram: formula, densitiy function maybe plot
+%- results
+%- drawbacks: only global illumination, spatial imbalance not considered
+
+\subsubsection{Logarithm Transform}
+In order to improve the illumination deficient, a logarithm transform can applied to the image
+to expand low gray level and compress high gray level \cite{liu02}:
+\begin{equation}
+g(x,y)= \ln(f(x,y)+1) \quad .
+\end{equation}
+The original image is denoted as $f(x,y)$, the logarithm image is $g(x,y)$.
+%- drawback: transform can overemphasize noise in  shadow areas..
+
+\subsubsection{Gamma Transform}
+\todo{}
+%- illumination changes are in low frequency band of image - therefore trafo to freq domain
+%- either truncating or scaling of low frequency coefficients - amplitude/influence is minimized
+Another possibility is to apply a gamma correction, which avoids noise in dark areas of the image that can occur with the logarithm transform \cite{Tan2010}:
+The gamma transformation can be calculated as:
+\begin{equation}
+	g(x,y)= f(x,y)^\gamma \label{eqn:gamma} \quad .
+\end{equation}
+The exponent $\gamma$ is the parameter the user can choose to control the strength of the transformation.
+
+\subsubsection{Manipulation in frequency domain}
+Following the rescaling of gray values, the image is transformed from a spatial representation to a frequency representation via a discrete cosine transformation (DCT):
+The applied transformation is defined as:
+\begin{equation}
+  \begin{split}
+    C(u,v)=\alpha(u)\alpha(v) \sum^{M-1}_{x=0}\sum^{N-1}_{y=0}g(x,y)\times \\ cos \left[ \frac{\pi(2x+1)u}{2M}\right]cos \left[ \frac{\pi(2y+1)v}{2N}\right].
+  \end{split}
+\end{equation}
+The DCT coefficients are denoted as $C(u,v)$ and $u,v$ are coordinates in the coefficient block with the dimensions $M,N$.
+The coordinates $x,y$ are pixel coordinates used in the spatial representation. 
+Then, low-frequency coefficients are down-scaled as they contain illumination information \cite{Goel11}.
+The number of scaled coefficients has to be balanced to minimize illumination variation 
+but keep the discriminative power of facial features.
+The overall illumination of the image can be controlled by the first DCT coefficient $C(0,0)$ \cite{liu02}.
+Therefore it is set with respect to the desired average gray level $\mu$.
+\begin{equation}
+  C(0,0)= \log(\mu)*\sqrt{MN}
+\end{equation}
+Finally, the image is transformed back to the spatial domain via inverse DCT.
+The next step is to reverse the transformation from the frequency representation to the spatial representation using the inverse DCT, which is defined as
+
+\begin{equation}
+  \begin{split}
+    g(x,y)=\alpha(u)\alpha(v)C(u,v) \sum^{M-1}_{x=0}\sum^{N-1}_{y=0}\times \\ cos \left[ \frac{\pi(2x+1)u}{2M}\right]cos \left[ \frac{\pi(2y+1)v}{2N}\right].
+  \end{split}
+\end{equation}
+
+%% equation: calculation of mu
+This way of preprocessing effects that even disadvantageous illumination conditions can be compensated for.
+The performance of this measure is evaluated in section \ref{ssec:EvalIllumination}.
+
+\subsection{Head Pose Correction}
+\label{chap:methods:subsec:pose}
+A major drawback of appearance based recognition methods is the need for both the training data and 
+the test data to be aligned as good as possible.
+Deviation from pixel accurate alignment leads to degradation in recognition performance as is pointed out in \cite{Wagner2012}.
+However, this can not be guaranteed in real world scenarios.
+%As the subject is not constantly looking straight towards the camera the face image is subject to perspective distortions.
+The automatic head pose correction aims at automatically aligning face images from their original recording perspective to a standardized virtual frontal recording perspective. % removing all effects of scale, translation and rotation.
+This way, pose dependent intra class variation is minimized. % and higher recognition rates can be achieved in datasets with unaligned images.
+
+%\begin{figure}[htbp]
+%  \begin{center}
+%    \def\svgwidth{0.8\columnwidth}
+%    \includesvg{../images/CoordinateSystem}
+%  \end{center}
+%  \caption{Transformation from face coordinate system to world coordinate system}
+%  \label{fig:FaceCoordinateSystem}
+%\end{figure}
+
+To establish the spatial relationship between the actual face orientation and 
+ the normalized perspective, facial landmarks such as the position of the eyes and the nose are detected in the color image using the Viola-Jones detector \cite{Viola01}.
+%The feature detection makes again use of the Viola and Jones object detector \cite{Viola01}. %, which was already used during the face detection stage \cite{Fischer2010}.
+%Here it is applied for the detection of the left and right eye and the nose.
+First, the nose is detected which enables a subdivision of the image into regions of interest for the left eye and the right eye.
+This reduces both the number of ambiguous matches and the computation time. Then we determine the 3d coordinates of the facial landmarks from the depth image to construct the face coordinate system $X_{face}$: the $x$-axis points from the left to the right eye, the $y$-axis runs parallel to the nose and the $z$-axis is chosen orthogonally to the $x$ and $y$ axes in viewing direction. Next, we compute the transformation $T_{cam}$ that aligns the face coordinate system $X_{face}$ with the world coordinate system $X_W$ that is defined by the camera coordinate system of the RGB-D sensor. Transforming the recorded 3d face with $T_{cam}$ establishes a normalization w.r.t. rotation and translation. Finally, the 3d face is shifted in front of the camera with another transformation $T_{norm}$ and projected into a virtual image plane that captures the face frontally. Scale is normalized during the projection by choosing the camera matrix $K$ of the virtual camera in such a way that eyes and nose of the normalized 3d face are matched with a fixed face template. The whole transformation from the recorded 3d face coordinates $\mathbf{x}_{face}$ to the coordinates of the virtual frontal image $\mathbf{u}_{norm}$ is then:
+\begin{equation}
+  \mathbf{u}_{norm} = K T_{norm}T_{cam}\mathbf{x}_{face} \quad .
+\end{equation}
+
+
+We take advantage of the depth data, the RGB-D sensor provides by using the corresponding 
+three dimensional coordinates of the facial landmarks.
+The face coordinate system is defined according to Fig. \ref{fig:FaceCoordinateSystem} and the parameters of the three dimensional affine transformation $T_{norm}$ from the face coordinate system to the normalized perspective, are calculated.
+To determine the head pose and the face orientation the face coordinate system $X_{face}$ is established.
+The $x$-axis of $X_{face}$ is chosen in the direction of the eye base from the left eye to the right eye.
+The coordinates of the detected nose are used to fix the $y$-axis. The $z$-axis is chosen orthogonally to the $x$ and $y$ axes in viewing direction.
+This way differences in translation and rotation can be minimized.
+The world coordinate system $X_W$ is the standard camera coordinate system of the Microsoft Kinect sensor according to Fig. \ref{fig:FaceCoordinateSystem}.
+The world coordinate system $X_W$ is the standard camera coordinate system of the Microsoft Kinect sensor.
+The coordinate system of the normalized perspective corresponds with the world coordinate system except for an offset in $Z$-direction.
+By introducing a constant offset, the image scale is normalized.
+By measuring the coordinates of the nose and the eyes, one obtains corresponding points in coordinate systems $X_{face}$ and $X_W$ and can therefore calculate the affine transformation $T_{cam}$.
+The transformation to the coordinate system $X_{norm}$ of the normalized perspective remains as a simple translation in $Z$-direction.
+
+The 3D data is transformed subsequently and projected on the virtual image plane, using the calibrated intrinsic camera parameters of the Kinect device in the camera matrix $C$.
+\begin{equation}
+  X_{norm}=C T_{norm}T_{cam}x_{face}
+\end{equation}
+The resulting perspectively normalized image corresponds to the virtual image taken from the normalized perspective.
+
+\section{Face Recognition}
+- general words
+- image high dimensional feature vector
+- division in training set and test images
+\subsection{PCA}
+\todo{}
+
+The principal components analysis (PCA) uses an orthogonal projection $W$ to represent a set of possibly correlated variables with a set of linearly uncorrelated variables.
+
+In this application PCA is used to generate a low dimensional set of features from a set of known images (training set).
+The covariance matrix of the training set and its eigenvectors are calculated.
+%- equation of covariance matrix
+%- equation of eigenvalue problem
+The $k$ eigenvectors with the biggest corresponding eigenvalues are used to form the orthogonal projection matrix $W$.
+Thus every image of the training set can be represented by a linear combination of these eigenvectors.
+%- equation of projection
+The weights of this linear combination serve as feature vector for each particular image.
+
+%- compression of image set is possible
+%- for identification image is projected to
+\subsection{Eigenfaces}
+\todo{}
+Eigenfaces is a popular projection based approach in face recognition, which applies PCA-based dimensionality reduction of involved images.
+In the training phase of Eigenfaces, first the projection matrix $W$, which maximizes the global scatter of the training set, is computed with PCA.
+Then each image of the training set is projected to feature space.
+%- equation of the projection
+
+In the recognition phase $W$ is used to determine the feature vector $x_test$ of a test image.
+In feature space the distances between $x_test$ and the feature vectors of the training set can be calculated. 
+These distances are called distances in face space (DIFS).
+
+% - equation of DIFS
+The recognition step is computationally very inexpensive and can therefore be used in realtime applications.
+The method has been experimentally proven to work well under very controlled conditions, as it is very sensitive to variation of scale, illumination, expression.
+
+\subsection{Fisherfaces}
+\todo{}
+
+Fisherfaces is a projection-based class specific based on Fisher's Linear Discriminant (FLD).
+A linear projection $W$ is used to project the image from the high dimensional pixel-space to a feature space of much lower dimension.
+In contrast to the Eigenfaces method, where principal component analysis (PCA) is used to maximize the total scatter among all images, Fisherfaces uses class information of the input data in the calculation of the projection and thus maximizes the inter-class scatter.
+The projection directions of the optimal projection $W_{opt}$ are chosen orthogonal to intra-class scatter in order to overcome intra-class variation stemming from lighting changes or differing facial expression \cite{Belhumeur1997}.
+As stated in literature, intra-class variations are often bigger than inter-class variation due to the recording conditions like illumination and head pose of the recorded subject \cite{Adini1997}.
+Therefore it is crucial to recognition performance to maximize the inter class scatter.
+
+The intra-class scatter matrix $S_W$ and the inter-class scatter matrix $S_B$ are calculated using the training set comprised of $C$ classes:
+\begin{align}
+  S_W&=\frac{1}{N_i}\sum\limits_{i=0}^{C}(m_i-m)(m_i-m)^T \\
+  S_B&=\sum\limits_{i=0}^{C}\sum\limits_{j \in X_i}(x_j-m_i)(x_j-m_i)^T \quad .
+\end{align}
+Class $i$ contains $N_i$ images $x_j\in X_i$ whose mean is $m_i$. The mean image of the training set is indicated by $m$. % and $m_i$ the mean image of class $i$.
+%The images of class $X_i$ are denoted as $x$.
+
+%The projection $W_{opt}$ is calculated by applying Fisher's criterion.
+%\begin{equation}
+%  W_{opt}=\arg \max \frac{|W^T S_B W |}{|W^T S_W W|}
+%\end{equation}
+%In a face recognition application the intra-class scatter matrix is singular \cite{Belhumeur1997}.
+To overcome the singularity of the intra-class scatter matrix, first, PCA is used to reduce the feature space to $N-C$ dimensions obtaining the PCA projection matrix $W_{PCA}$, followed by FLD to reduce the dimensionality to $C-1$. 
+The final projection matrix $W_{opt}$ is defined as:
+\begin{align}
+  W_{PCA}&=\arg \max {\left|W^T S_T W \right|}\\
+  W_{opt}&=\arg \max \left|\frac{W^T W^T_{PCA} S_B W^T_{PCA} W }{W^T W^T_{PCA} S_W W^T_{PCA} W }\right|  \\
+  W_{opt}^T&=W_{FLD}^TW_{PCA}^T
+\end{align}
+%$W_{opt}$ contains generalized Eigenvectors.
+
+\subsection{Classification and Identification of Unknown People}
+\label{ssec:IdentificationUnknown}
+%The resulting coefficients serve as feature vector and can be compared to the coefficients of the projected training images.
+The projection $W_{opt}$ is used to project an arbitrary image $x$ to the feature space via $y=W_{opt} \cdot x$. 
+%\begin{equation}
+%  y=W_{opt} \cdot x  \quad .  \label{eqn:FisherProjection}
+%\end{equation}
+%This operation is performed for the images in the training set and for potential test images.
+Classification is performed by finding out which classes's projected training data best describes vector $y$. %, obtained by projecting a test image into feature space.
+Specifically, one searches for a sample $y_{i_k}$ of class $X_i$ which minimizes the Distance in Face Space (DIFS) to the projected test image $y_{test}$: %, which is calculated according to equation \ref{eqn:DIFS}
+\begin{equation}
+  \label{eqn:DIFS}
+  DIFS=||y_{test}-y_{i_k}||^2
+\end{equation}
+Instead of calculating the Euclidean distance, the feature vector can also be classified by machine learning methods such as Support Vector Machines (SVM) or K-Nearest Neighbor (KNN).
+The classification model has to be trained based on the training data before classification can be performed.
+
+A typical application scenario for face recognition consists of people that are known to system $P_{k}$ and people that are unknown $P_{u}$.
+In order to distinguish between those two groups during the classification step, a threshold in DIFS is introduced.
+Whenever this threshold is exceeded, the test face is classified as part of $P_u$.
+%An optimal selection of the values for this threshold is crucial to the recognition performance and for a practical application of the system.
+The automatic threshold selection used here is based on information from the training data set only.
+The maximal intra-class distance $D_{max,i}$ in feature space for each class serves as a measure of expansion of the projected images in feature space and hence their similarity.
+The minimal inter-class distance $P_{min,i}$ gives an indication of the separation of the class clusters in feature space.
+\begin{align}
+  %\begin{split}
+    D_{max,i} & =\max_{j,k \in X_i , j \neq k}\|W_{opt}(x_{j})-W_{opt}(x_{k})\|^2  \\
+    P_{min,i} & =\min_{j \in X_i ,l \in X_m, m \neq i}\|W_{opt}(x_{j})-W_{opt}(x_{l})\|^2
+  %\end{split}
+\end{align}
+The global threshold for the database is then defined as:
+\begin{align}
+  %\begin{split}
+   \delta & = \min_{i=1,\ldots,C}\left(\frac{D_{max,i}+P_{min,i}}{2}\right)
+   %\delta_i&=\frac{D_{max,i}+P_{min,i}}{2}
+	%\end{split}
+\end{align}
+To allow for an effective selection of the threshold, a sufficient number of training images is required.
+
+\subsection{Detection Tracking}
+\label{sec:methods:subsec:tracking}
+
+In robotic applications one usually has access to an RGB-D image stream. This provides the opportunity to connect and cross-check the detection results among multiple frames instead of analyzing each image in isolation. The goal of such a tracking of detections is to keep a history of identification results for each detected person to render the identification more robust and filter out sporadic false detections. %The algorithmic implementation of the tracking is twofold: first, the current detections are matched with detections from the previous image where applicable and second, the history of labels is updated and the most probable label becomes selected for each detected face.
+
+The first task of matching previously detected faces with the current detections requires to define some measure of quality for a potential pair. With respect to (i) the high accuracy of the face identification on single images (ii) the high processing rate of the recognition system and (iii) the typical movement speed of persons and robots we assert the following matching costs between previous detection $i$ and current detection $j$:
+\begin{align}
+	c_{i,j} & = \left\| X_i - X_j \right\|_{L_2} + \left\| P_i - P_j \right\|_{L_2} \quad ,
+\end{align}
+where $X$ stands for the 3d coordinates of a detected face and $P$ denotes the probability distribution of each detection over all possible labels. Consequently, this costs function rewards if both detections appear at similar locations, which fits the assumptions of a high processing rate and a low movement speed of the persons, and if both detections have a similar prediction over the range of possible labels. The matching problem can be represented by a bipartite graph whose $N_p$ left-hand side nodes depict the set of previous detections and whose $N_c$ right-hand side nodes stand for the current detections. Both sets are fully connected with edges that carry the costs $c_{i,j}, i=1\ldots N_p, j=1\ldots N_c$. Finding the minimum costs matching in the weighted bipartite graph is known as the assignment problem. For solving this problem we apply the Hungarian method using the implementation of Rigdon \cite{rigdon2008_munkres}. New detections in the current image that have no matching previous detection are just added to the set of detections with their maximum likelihood label.
+
+Having found the globally best fit of assignments we model the person identification process over time with a Hidden Markov Model (HMM) which naturally filters out singular false classifications. %Defining $l_t=q$ as the estimated label $q$ at time $t$, $o_t$ as the classifier's output label at $t$ and $\mathcal{L}$ as the set of possible labels the update rule is
+%\begin{align}
+%	p(l_t=q) & = \sum_{o_t\in \mathcal{L}}{p(l_t=q | o_t) p(o_t)}
+%\end{align}
+%where the HMM is defined as
+%\begin{align}
+%	& p(l_t=q | o_{t:1}) = \gamma \cdot p(o_t | l_t=q) \cdot \notag \\ & \sum_{q'\in \mathcal{L}}{p(l_t=q | l_{t-1}=q', o_{t-1}) p(l_{t-1}=q' | o_{t-1:1})}
+%\end{align}
+%with $\gamma$ being a normalization constant, $o_{t:1}$ representing the series of classifier outputs from time step $1$ to $t$ and the Markov property: $p(l_t=q | o_t) = p(l_t=q | o_{t:1})$. The classifier's prediction accuracy $p(o_t | l_t=q)$ is estimated from cross-validating the recorded data, the transition model $p(l_t=q | l_{t-1}=q', o_{t-1})$ simply assigns a high probability if both labels are equal, i.e. $q=q'$, and a low probability if they differ.
+After updating the probability distributions over the available labels for the current detections, we finally need to decide for a unique label for each face. Considering the label probabilities as weights, this is again an assignment problem which is solved by the Hungarian algorithm. Should the label of a new face coincide with an already assigned label, the new detection is set back to the label 'Unknown'.
+
+%- (rmb)
+%- Hungarian method
+%- Hidden Markov Models
+%- clean double occurring labels (may occur )
+%- proceed with tracking after short occlusions
+
+
+\subsection{System Integration}
+The person recognition system is fully implemented as a ROS package that can easily be downloaded and used. Standalone usage is facilitated with a simple control client provided with the package. The usage within a larger software project (C++ or Python) is similarly simple through the offered service interface that provides functions for automatic and manual image capture, training data access, classifier training, and recognition. Especially for users of Fraunhofer IPA's Care-O-bot the usage is fairly simple as the person recognition system is part of the Care-O-bot skill API.
+
+%\subsubsection{Usage with Single Color Cameras}
+%- maybe we add a paragraph how we adapted the algorithm to work with a single color only
+
+
+%(rmb)
+%- client protocol, services for data capture, classifier training, recognition
+%- embedded in ROS framework
+%- easy integration into larger scripts as a person identification skill (person detection as part of the Care-O-bot skill API)
+%- user is capable of writing a simple state machine that queries unknown user for their name and captures some training images to recognize him the next time

@@ -1,0 +1,55 @@
+\begin{tikzpicture}[y=0.80pt, x=0.8pt,yscale=-1, inner sep=0pt, outer sep=0pt]
+\input{../conf/tikz_config}
+
+%% Graphics here
+\node[process,node distance = 80pt,text width =80pt ](IA) { Image Acquisition};
+\node[process,node distance = 80pt,text width =80pt ,below of=IA](FN) { Image Normalization};
+\node[data,node distance =    130pt, right of = FN,text width=60pt](OTS) {Old Training Data};
+\node[data,node distance =    80pt,text width =80pt ,below right of=FN,text width = 50pt](TS) { Training Set};
+\node[data,node distance =    80pt,text width =80pt ,below left  of=FN,text width = 50pt](TI) { Test Image};
+\node[process,node distance = 80pt, right of=TS](PCA) {PCA};
+\node[process,node distance = 40pt, below  of=PCA](FLD) {FLD};
+\node[data,node distance =    40pt, below  of=FLD](W) {Projection Matrix};
+\node[process,node distance = 150pt,text width =80pt ,below  of=FN](PROJ) {Projection to subspace};
+\node[data,node distance =    90pt,text width =80pt ,below  right of=PROJ](MODEL) {Recognition Model};
+\node[process,node distance = 90pt,text width =80pt ,below  left of=PROJ](CLASS) {Classification method};
+\node[data,node distance =    60pt,text width =80pt ,below  of=CLASS](CI) {Classified Image};
+
+
+\draw[->,color=red](IA)--(150,12)|-(FN);
+\draw[dashes](IA)--(-40,12)|-(FN);
+
+\draw[dashes](FN)--(TI);
+\draw[->,color=red](FN)--(TS);
+\draw[->,color=red](OTS)--(TS);
+
+
+\draw[->,color=red](TS)--(PCA);
+\draw[->,color=red](PCA)--(FLD);
+\draw[->,color=red](FLD)--(W);
+
+
+\draw[->,color=red](TS)--(PROJ);
+\draw[dashes](TI)--(PROJ);
+
+
+
+\draw[dashes](PROJ)--(CLASS);
+\draw[->,color=red](PROJ)--(MODEL);
+
+
+\draw[dashes](CLASS)--(CI);
+
+\draw[->,color=red](W)--(PROJ);
+
+
+
+%% LEGEND
+
+\filldraw[fill=white] (185,0) rectangle(290,45);
+\draw[->,color=red] (190,12)--(220,12) node[draw=none]at(255,12){Training};
+\draw[dashes] (190,30)--(220,30) node[draw=none]at(255,30){Recognition};
+
+
+
+\end{tikzpicture}

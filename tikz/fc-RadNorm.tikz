@@ -1,0 +1,47 @@
+\begin{tikzpicture}[y=0.80pt, x=0.8pt,yscale=-1, inner sep=0pt, outer sep=0pt]
+\input{../conf/tikz_config}
+
+\filldraw[fill=green!10,opacity=0.5] (-5,-5) rectangle(70,365)   node[draw=none] at(35 ,-10)  {RGB space} ;
+\filldraw[fill=green!10,opacity=0.5] (90,-5) rectangle(280,365)  node[draw=none] at(150,-10)  {HSV space} ;
+\filldraw[fill=green!10,opacity=0.5] (310,-5) rectangle(410,365) node[draw=none] at(360,-10)  {single channel} ;
+
+
+
+\node[process,node distance=90pt](IRGB){$\img_{RGB}$};
+\node[process,node distance=90pt,right of=IRGB](IHSV){$\img_{HSV}$};
+\node[process,node distance=90pt,right of=IHSV](IV){$\img_{V}$};
+\node[process,node distance=90pt,right of=IV](ILOG){$log(\img_{V})$};
+\node[process,node distance=90pt,below of=ILOG](FILOG){$F(log(\img_{V}))$};
+\node[process,node distance=90pt,below of=FILOG](FILOGN){$F(log(\img_{V}))'$};
+\node[process,node distance=90pt,below of=FILOGN](ILOGN){$log(\img_{V})'$};
+\node[process,node distance=90pt,left of=ILOGN](IVN){$\img_{V}'$};
+\node[process,node distance=90pt,left of=IVN](IHSVN){$\img_{HSV}'$};
+\node[process,node distance=90pt,left of=IHSVN](IRGBN){$\img_{RGB}'$};
+
+
+\node[decision,above of=IHSV,node distance=70pt](DEC0){\# channels};
+\node[data,above of=DEC0,node distance=50pt](INPUT){Input Image};
+%%\node [draw=none,left of=DEC0]{3} edge[out=180,in=270,->](-5,-5);
+\draw[->](DEC0)-|(-5,-5)       node[draw=none,midway,above=5pt]{3};
+\draw[->](DEC0)-|(310,-5)      node[draw=none,midway,above=5pt]{1};
+\draw[->](INPUT)--(DEC0);
+
+\draw[->](IRGB)--(IHSV)        node[draw=none,text width = 30pt,midway,below=5pt]{RGB to HSV};
+\draw[->](IHSV)--(IV)          node[draw=none,text width = 40pt,midway,below=5pt]{extract Value channel};
+\draw[->](IV)--(ILOG)          node[draw=none,text width = 30pt,midway,below=5pt]{logarithm trafo};
+\draw[->](ILOG)--(FILOG)       node[draw=none,text width = 30pt,midway,right=5pt]{DCT};
+\draw[->](FILOG)--(FILOGN)     node[draw=none,text width = 30pt,midway,right=5pt]{Truncation};
+\draw[->](FILOGN)--(ILOGN)     node[draw=none,text width = 30pt,midway,right=5pt]{inverse DCT};
+\draw[->](ILOGN)--(IVN)        node[draw=none,text width = 30pt,midway,above=5pt]{exponential trafo};
+\draw[->](IVN)--(IHSVN)        node[draw=none,text width = 40pt,midway,above=5pt]{merge Value channel};
+\draw[->](IHSVN)--(IRGBN)      node[draw=none,text width = 30pt,midway,above=5pt]{HSV to RGB};
+\draw[->](IHSV)--(IHSVN)      node[draw=none,text width  = 40pt,midway,right=5pt]{H,S channels};
+%%\node[process](RGB2HSV){Transform. to HSV colorspace};
+%%\node[process,below of=RGB2HSV](LOG){Logarithmic transform};
+%%\node[process,below of=LOG](DCT){DCT transform};
+%%\node[process,below of=DCT](TRUNC){truncation of DCT coefficients};
+%%\node[process,below of=TRUNC](IDCT){Inverse DCT transform};
+%%\node[process,below of=IDCT](EXP){Exponential transform};
+%%\node[process,below of=EXP](HSV2RGB){Transform to RGB colorspace};
+
+\end{tikzpicture}

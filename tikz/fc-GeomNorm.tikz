@@ -1,0 +1,32 @@
+\begin{tikzpicture}[y=0.80pt, x=0.8pt,yscale=-1, inner sep=0pt, outer sep=0pt]
+\input{../conf/tikz_config}
+
+%%\filldraw[fill=green!10,opacity=0.5] (-5,-5) rectangle(70,365)   node[draw=none] at(35 ,-10)  {RGB space} ;
+
+\node[data](INPUT){Input Image};
+\node[process,node distance=80pt, left of=INPUT](NOSE){Nose detection};
+\node[process,node distance=80pt, left of=INPUT](NOSE){Nose detection};
+\node[decision,node distance=80pt, ,text width =40pt, below of=NOSE](DEC1){succesful?};
+\node[process,node distance=80pt,  ,text width =40pt, below left of=DEC1](SUB){Subdivide image};
+\node[process,node distance=80pt,  ,text width =40pt, below  of=SUB](FEATS){Detect eyes,mouth};
+\node[decision,node distance=80pt, ,text width =40pt, below  of=FEATS](DEC2){successful?};
+\node[process,node distance=80pt,  ,text width =60pt, below  of=DEC2](CALC){Calculate affine transformation};
+\node[process,node distance=80pt,  ,text width =40pt, below  of=CALC](WARP){Warp image};
+\node[process,node distance=150pt,  ,text width =60pt,below left  of=FEATS](NORM){norm coordinates nose, mouth};
+\node[data,right  of=DEC2,node distance=120pt](OUTPUT){Output Image};
+
+\draw[->](INPUT)--(NOSE)  ;
+\draw[->](NOSE)--(DEC1)  ;
+\draw[->](SUB)--(FEATS)  ;
+\draw[->](FEATS)--(DEC2)  ;
+\draw[->](FEATS)--(NORM)  node[draw=none,text width = 50pt,midway,left=2pt]{detected eye coordinates};
+\draw[->](CALC)--(WARP)  ;
+\draw[->](NORM)--(CALC)  ;
+\draw[->](DEC1)--(SUB)        node[draw=none,text width = 30pt,midway,right=2pt]{Yes};
+\draw[->](DEC2)--(CALC)       node[draw=none,text width = 30pt,midway,right=2pt]{Yes};
+\draw[->](DEC2)--(OUTPUT)       node[draw=none,text width = 30pt,midway,above=2pt]{No};
+\draw[->](DEC1)-|(OUTPUT)       node[draw=none,text width = 30pt,midway,right=2pt]{No};
+\draw[->](WARP)-|(OUTPUT) ;
+\end{tikzpicture}
+
+

@@ -1,0 +1,62 @@
+\begin{tikzpicture}[y=0.80pt, x=0.8pt,yscale=-1, inner sep=0pt, outer sep=0pt]
+\input{../conf/tikz_config}
+
+\filldraw[fill=white] (-45,35) rectangle(180,370);
+\filldraw[fill=green!10,opacity=0.5] (-30,65) rectangle(165,105);
+\filldraw[fill=green!10,opacity=0.5] (-30,110) rectangle(165,180);
+\filldraw[fill=green!10,opacity=0.5] (-30,190) rectangle(165,365);
+%%%% picture
+
+\node[data,node distance=200pt](Input){Input Image};
+
+
+\node[module,below of=Input](FaceNorm){\textbf{Face Normalizer}};
+\node[process,below of=FaceNorm,node distance=30pt](SIZE){Size};
+\node[process,below of=SIZE](RAD){Radiometry};
+\node[process,below of=RAD](GEOM){Geometry};
+
+
+\node[subprocess,right of=RAD,node distance=80pt](HistEq){DCT based illumination correction};
+\node[subprocess,right of=SIZE,node distance=80pt](ResImg){resize  image};
+
+\node[subprocess,right of=GEOM,node distance=80pt](DetFeat){detect features};
+\node[decision, below of=DetFeat,node distance=50pt](Decision){trafo possible};
+\node[subprocess,below of=Decision,node distance=60pt](Warp){warp image};
+
+
+\node[data,node distance=320pt,below of=Input](Output){Normalized Image};
+
+
+
+
+\draw[->](SIZE)--(RAD);
+\draw[->](RAD)--(GEOM);
+\path[dashes](GEOM)--(DetFeat);
+\path[dashes](SIZE)--(ResImg);
+\path[dashes](RAD)--(HistEq);
+
+
+\draw[->](Input)--(FaceNorm);
+%%\draw[->](205,360)--(Output);
+\draw[->](DetFeat)--(Decision);
+\draw[dashes](Decision)-|(12,370)node[draw=none,midway, left=5pt]{No};
+\draw[->](12,370)--(Output);
+\draw[dashes](Decision)--(Warp)node[draw=none,midway, left=5pt]{Yes};
+\draw[dashes](Warp)--(12,347);
+
+
+%% images
+\node[inner sep=0,right of=Input,anchor= west,node distance=155pt] (img1) {\includegraphics[width=30pt]{../img/fc-FaceNorm_01.jpg}};
+\node[inner sep=0,right of=SIZE, anchor= west,node distance=150pt]  (img2){\includegraphics[width=40pt]{../img/fc-FaceNorm_02.jpg}};
+\node[inner sep=0,right of=RAD,  anchor= west,node distance=150pt]  (img3){\includegraphics[width=40pt]{../img/fc-FaceNorm_03.jpg}};
+\node[inner sep=0,right of=DetFeat,  anchor= west,node distance=70pt]  (img4){\includegraphics[width=40pt]{../img/fc-FaceNorm_04.jpg}};
+\node[inner sep=0,right of=Warp,  anchor= west,node distance=70pt]  (img5){\includegraphics[width=40pt]{../img/fc-FaceNorm_05.jpg}};
+
+\draw[dashes](Input)--(img1);
+\draw[dashes](ResImg)--(img2);
+\draw[dashes](HistEq)--(img3);
+\draw[dashes](DetFeat)--(img4);
+\draw[dashes](Warp)--(img5);
+
+\end{tikzpicture}
+

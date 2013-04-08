@@ -1,0 +1,56 @@
+%-------- DOTEX config file--------------------
+%-----------------------------------iam-tom-2012
+
+%% renewed commands
+%%--------------------------------
+
+%\renewcommand{\labelitemi}{-}
+
+
+%% new commands
+%%--------------------------------
+
+%\newcommand{}{}
+\newcommand{\idea}{\textit{\textbf{IDEA:}}\textit}
+\newcommand{\lid}{\texttt{\textbf{Literature ID:}}\texttt}
+\newcommand{\src}{\texttt{\textbf{}}}
+\newcommand{\now}{\textbf{\today}}
+
+% TODO IN red
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO:} \emph{#1}}}
+
+%% commands
+
+\newcommand{\img}{{I}}
+
+
+%CODE SNIPPETS
+%%--------------------------------
+%this code auto-regenerates pdf+latex from svg
+\newcommand{\executeiffilenewer}[3]{%
+\ifnum\pdfstrcmp{\pdffilemoddate{#1}}%
+{\pdffilemoddate{#2}}>0%
+{\immediate\write18{#3}}\fi%
+}
+\newcommand{\includesvg}[1]{%
+\executeiffilenewer{#1.svg}{#1.pdf}%
+{inkscape -z -D --file=#1.svg %
+--export-pdf=#1.pdf --export-latex}%
+\input{#1.pdf_tex}%
+}
+
+
+
+
+% sizhe and margin settings %
+\setlength{\unitlength}{1cm}
+\setlength{\oddsidemargin}{0.3cm}
+\setlength{\evensidemargin}{0.3cm}
+\setlength{\textwidth}{15.5cm}
+\setlength{\topmargin}{-1.2cm}
+\setlength{\textheight}{23cm}
+\columnsep 0.5cm
+%
+
+
+
